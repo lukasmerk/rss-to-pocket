@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [ "$1" == "" ] || [ "$2" == "" ]; then
+	echo "Please provide RSS feed URL and From-E-Mail."
+	exit
+
+fi
+
+curl -s $1 > /feed.rss
+
+urllist=$(xq ./feed.rss -O -x '/rss/channel/item/link/text()')
+
+while IFS= read -r url; do
+	if [[ "$(grep $url /savedurl.list)" == "" ]]; then
+		echo "Adding $url to Pocket account…"
+		cat <<- EOL | ssmtp add@getpocket.com
+		From: <$2>
+		Subject: Pocket Add
+
+		$url
+		EOL
+		echo "$url" >> /savedurl.list
+	fi
+done <<< "$urllist"
